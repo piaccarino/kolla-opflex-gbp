@@ -1,0 +1,94 @@
+---
+- name: Ensuring the containers running agent-ovs and opflex are up
+  kolla_docker:
+    name: "{{ item.name }}"
+    action: "get_container_state"
+  register: neutron_container_states
+  failed_when: neutron_container_states.Running == false
+  when:
+    - "{{ item.enabled|default(True) }}"
+    - inventory_hostname in groups[item.group]
+  with_items:
+    - { name: neutron_opflex_agent, group: neutron-opflex-agent }
+    - { name: neutron_agentovs_agent, group: neutron-agentovs-agent }
+
+- include: config.yml
+
+- name: Check the configs in containers running neutron agents
+  command: docker exec {{ item.name }} /usr/local/bin/kolla_set_configs --check
+  changed_when: false
+  failed_when: false
+  register: neutron_check_results
+  when:
+    - "{{ item.enabled|default(True) }}"
+    - inventory_hostname in groups[item.group]
+  with_items:
+    - { name: neutron_opflex_agent, group: neutron-opflex-agent }
+    - { name: neutron_agentovs_agent, group: neutron-agentovs-agent }
+
+- name: Containers config strategy for containers running neutron agents
+  kolla_docker:
+    name: "{{ item.name }}"
+    action: "get_container_env"
+  register: neutron_container_envs
+  when:
+    - "{{ item.enabled|default(True) }}"
+    - inventory_hostname in groups[item.group]
+  with_items:
+    - { name: neutron_opflex_agent, group: neutron-opflex-agent }
+    - { name: neutron_agentovs_agent, group: neutron-agentovs-agent }
+
+- name: Remove the containers running neutron agents
+  kolla_docker:
+    name: "{{ item[0]['name'] }}"
+    action: "remove_container"
+  register: neutron_remove_containers
+  when:
+    - "{{ item[0].enabled | default(True) }}"
+    - inventory_hostname in groups[item[0]['group']]
+    - config_strategy == "COPY_ONCE" or item[1]['KOLLA_CONFIG_STRATEGY'] == 'COPY_ONCE'
+    - item[2]['rc'] == 1
+  with_together:
+       [{ name: neutron_opflex_agent, group: neutron-opflex-agent },
+       { name: neutron_agentovs_agent, group: neutron-agentovs-agent }]
+    - "{{ neutron_container_envs.results }}"
+    - "{{ neutron_check_results.results }}"
+
+- include: start.yml
+  when: neutron_remove_containers.changed
+        or openvswitch_agent_remove_containers.changed
+        or linuxbridge_agent_remove_containers.changed
+
+- name: Restart containers running neutron agents
+  kolla_docker:
+    name: "{{ item[0]['name'] }}"
+    action: "restart_container"
+  when:
+    - "{{ item[0].enabled|default(True) }}"
+    - config_strategy == 'COPY_ALWAYS'
+    - inventory_hostname in groups[item[0]['group']]
+    - item[1]['KOLLA_CONFIG_STRATEGY'] != 'COPY_ONCE'
+    - item[2]['rc'] == 1
+  with_together:
+    - [{ name: neutron_opflex_agent, group: neutron-opflex-agent },
+       { name: neutron_opflex_agent, group: compute, enabled: "{{ enable_neutron_dvr | bool }}" },
+       { name: neutron_agentovs_agent, group: neutron-agentovs-agent },
+       { name: neutron_agentovs_agent, group: compute, enabled: "{{ enable_neutron_dvr | bool }}" }]
+    - "{{ neutron_container_envs.results }}"
+    - "{{ neutron_check_results.results }}"
+
+- name: Restart the neutron_openvswitch_agent container
+  kolla_docker:
+    name: "neutron_openvswitch_agent"
+    action: "restart_container"
+  when:
+    - config_strategy == 'COPY_ALWAYS'
+    - neutron_plugin_agent == "openvswitch"
+    - (
+        ( inventory_hostname in groups['compute']
+          or inventory_hostname in groups['neutron-opflex-agent']
+          or inventory_hostname in groups['neutron-agentovs-agent']
+        )
+      )
+    - openvswitch_agent_envs['KOLLA_CONFIG_STRATEGY'] != 'COPY_ONCE'
+    - openvswitch_agent_check_results['rc'] == 1

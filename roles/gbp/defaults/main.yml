@@ -1,0 +1,43 @@
+---
+project_name: "neutron"
+
+####################
+# Database
+####################
+neutron_database_name: "neutron"
+neutron_database_user: "neutron"
+neutron_database_address: "{{ kolla_internal_fqdn }}:{{ database_port }}"
+
+
+####################
+# Docker
+####################
+
+gbp_opflex_agent_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-gbp-opflex-agent"
+gbp_opflex_agent_tag: "{{ openstack_release }}"
+gbp_opflex_agent_image_full: "{{ gbp_opflex_agent_image }}:{{ gbp_opflex_agent_tag }}"
+
+gbp_agent_ovs_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-gbp-agent-ovs"
+gbp_agent_ovs_tag: "{{ openstack_release }}"
+gbp_agent_ovs_image_full: "{{ gbp_agent_ovs_image }}:{{ gbp_agent_ovs_tag }}"
+
+gbp_neutron_server_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-gbp-neutron-server"
+gbp_neutron_server_tag: "{{ openstack_release }}"
+gbp_neutron_server_image_full: "{{ gbp_neutron_server_image }}:{{ gbp_neutron_server_tag }}"
+
+####################
+# OpenStack
+####################
+dhcp_agents_per_network: 2
+min_l3_agents_per_router: 2
+max_l3_agents_per_router: 3
+
+neutron_admin_endpoint: "{{ admin_protocol }}://{{ kolla_internal_fqdn }}:{{ neutron_server_port }}"
+neutron_internal_endpoint: "{{ internal_protocol }}://{{ kolla_internal_fqdn }}:{{ neutron_server_port }}"
+neutron_public_endpoint: "{{ public_protocol }}://{{ kolla_external_fqdn }}:{{ neutron_server_port }}"
+
+neutron_logging_debug: "{{ openstack_logging_debug }}"
+
+neutron_bridge_name: "br-ex"
+
+openstack_neutron_auth: "{'auth_url':'{{ openstack_auth.auth_url }}','username':'{{ openstack_auth.username }}','password':'{{ openstack_auth.password }}','project_name':'{{ openstack_auth.project_name }}'}"

@@ -1,0 +1,50 @@
+---
+- name: Starting gbp-neutron-server container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ gbp_neutron_server_image_full }}"
+    name: "gbp_neutron_server"
+    volumes:
+      - "{{ node_config_directory }}/gbp-neutron-server/:{{ container_config_directory }}/:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+      - "kolla_logs:/var/log/kolla/"
+  when: inventory_hostname in groups['gbp-neutron-server']
+
+- name: Starting gbp-opflex-agent container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ gbp_opflex_agent_image_full }}"
+    name: "gbp_opflex_agent"
+    privileged: True
+    volumes:
+      - "{{ node_config_directory }}/gbp-opflex-agent/:{{ container_config_directory }}/:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/run:/run:shared"
+      - "/run/netns/:/run/netns/:shared"
+      - "/var/lib/opflex-agent-ovs/:/var/lib/opflex-agent-ovs/:shared"
+      - "/var/lib/neutron/opflex-agent/:/var/lib/neutron/opflex-agent/:shared"
+      - "neutron_metadata_socket:/var/lib/neutron/kolla/"
+      - "kolla_logs:/var/log/kolla/"
+  when:
+    - inventory_hostname in groups['gbp-opflex-agent']
+
+- name: Starting gbp-agent-ovs container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ gbp_agent_ovs_image_full }}"
+    name: "gbp_agent_ovs"
+    privileged: True
+    volumes:
+      - "{{ node_config_directory }}/gbp-agent-ovs/:{{ container_config_directory }}/:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/run:/run:shared"
+      - "/run/netns/:/run/netns/:shared"
+      - "/var/lib/opflex-agent-ovs/:/var/lib/opflex-agent-ovs/:shared"
+      - "/var/lib/neutron/opflex-agent/:/var/lib/neutron/opflex-agent/:shared"
+      - "neutron_metadata_socket:/var/lib/neutron/kolla/"
+      - "kolla_logs:/var/log/kolla/"
+  when:
+    - inventory_hostname in groups['gbp-agent-ovs']

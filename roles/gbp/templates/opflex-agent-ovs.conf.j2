@@ -1,0 +1,103 @@
+{
+     "log": {
+         "level": "info"
+    },
+
+    "opflex": {
+        "domain": "comp/prov-OpenStack/ctrlr-[labd-opflex]-labd-opflex/sw-InsiemeLSOid",
+        "name": "{{ inventory_hostname }}",
+
+        "peers": [
+            {"hostname": "10.0.0.30", "port": 8009}
+        ],
+
+        "ssl": {
+            // SSL mode.  Possible values:
+            // disabled: communicate without encryption (default)
+            // encrypted: encrypt but do not verify peers
+            // secure: encrypt and verify peer certificates
+            "mode": "enabled",
+
+            // The path to a directory containing trusted certificate
+            // authority public certificates, or a file containing a
+            // specific CA certificate.
+            // Default: /etc/ssl/certs/
+            "ca-store": "/etc/ssl/certs"
+        },
+
+        "inspector": {
+            // Enable the MODB inspector service, which allows
+            // inspecting the state of the managed object database.
+            // Default: enabled
+            "enabled": true,
+
+            // Listen on the specified socket for the inspector
+            // Default /var/run/opflex-agent-ovs-inspect.sock
+            "socket-name": "/var/lib/opflex-agent-ovs/opflex-agent-ovs-inspect.sock"
+        },
+
+        "notif": {
+            // Enable the agent notification service, which sends
+            // notifications to interested listeners over a UNIX
+            // socket.
+            // Default: enabled
+            "enabled": true,
+
+            // Listen on the specified socket for the inspector
+            // Default /var/run/opflex-agent-ovs-notif.sock
+            "socket-name": "/var/lib/opflex-agent-ovs/opflex-agent-ovs-notif.sock",
+            "socket-group": "neutron",
+            "socket-permissions": "770"
+        }
+    },
+
+    // Endpoint sources provide metadata about local endpoints
+    "endpoint-sources": {
+        // Filesystem path to monitor for endpoint information
+        "filesystem": ["/var/lib/opflex-agent-ovs/endpoints"]
+    },
+
+    // Service sources provide metadata about services that can
+    // provide functionality for local endpoints
+    "service-sources": {
+        // Filesystem path to monitor for service information
+        "filesystem": ["/var/lib/opflex-agent-ovs/services"]
+    },
+
+    // Renderers enforce policy obtained via OpFlex.
+    "renderers": {
+        // Stitched-mode renderer for interoperating with a
+        // hardware fabric such as ACI
+        // EXAMPLE:
+         "stitched-mode": {
+            "ovs-bridge-name": "br-int",
+             "encap": {
+                 "vxlan" : {
+                     "encap-iface": "br-int_vxlan0",
+                     "uplink-iface": "bond0.4094",
+                     "uplink-vlan": 4094,
+                     "remote-ip": "10.0.0.32",
+                     "remote-port": 8472
+                 }
+         },
+             "forwarding": {
+                 "virtual-router": {
+                     "enabled": true,
+                    "mac": "00:22:bd:f8:19:ff",
+                     "ipv6" : {
+                         "router-advertisement": false
+                      }
+                },
+                 "virtual-dhcp": {
+                     "enabled": true,
+                     "mac": "00:22:bd:f8:19:ff"
+                 },
+                 "endpoint-advertisements": {
+                     "enabled": "true"
+                 }
+            },
+             "flowid-cache-dir": "/var/lib/opflex-agent-ovs/ids"
+        }
+    }
+}
+

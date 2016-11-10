@@ -1,0 +1,19 @@
+[DEFAULT]
+debug = False
+auth_url = https://integration-internal.edisonqa.sgns.net:35357/v2.0
+auth_region = SungardAS-IntegrationLab
+auth_insecure = False
+admin_tenant_name = admin
+admin_user = cloud_admin
+admin_password = admin1
+
+nova_metadata_ip = integration-internal.edisonqa.sgns.net
+nova_metadata_port = 8775
+nova_metadata_protocol = https
+
+metadata_proxy_shared_secret = 1wErCWIdL32PLDFdu04njIzHqpSCc3Aa
+
+metadata_workers = 4
+metadata_backlog = 4096
+
+cache_url = memory://?default_ttl=5

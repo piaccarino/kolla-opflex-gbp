@@ -1,0 +1,30 @@
+---
+- include: unregister.yml
+  when: inventory_hostname in groups['neutron']
+        or inventory_hostname in groups['network']
+        or inventory_hostname in groups['neutron-l3-agent']
+        or inventory_hostname in groups['neutron-metadata-agent']
+
+- include: register.yml
+  when: inventory_hostname in groups['gbp-neutron-server']
+
+- include: config.yml
+  when: inventory_hostname in groups['compute']
+        or inventory_hostname in groups['gbp-neutron-server']
+        or inventory_hostname in groups['gbp-opflex-agent']
+        or inventory_hostname in groups['gbp-agent-ovs']
+
+- include: config-neutron-fake.yml
+  when:
+    - inventory_hostname in groups['compute']
+    - enable_nova_fake | bool
+
+- include: bootstrap.yml
+  when: inventory_hostname in groups['gbp-neutron-server']
+
+- include: start.yml
+  when: inventory_hostname in groups['compute']
+        or inventory_hostname in groups['gbp-neutron-server']
+        or inventory_hostname in groups['gbp-opflex-agent']
+        or inventory_hostname in groups['gbp-agent-ovs']
+

@@ -1,0 +1,33 @@
+FROM {{ namespace }}/{{ image_prefix }}gbp-base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% block neutron_agentovs_agent_header %}{% endblock %}
+
+{% import "macros.j2" as macros with context %}
+
+{% if install_type == 'binary' %}
+
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+        {% set neutron_agentovs_agent_packages = [
+            'apicapi',
+            'libopflex',
+            'libuv',
+            'neutron-ml2-driver-apic',
+            'python-openvswitch-gbp',
+            'agent-ovs'
+        ] %}
+    {% elif base_distro in ['ubuntu', 'debian'] %}
+        {% set neutron_agentovs_agent_packages = ['agent-ovs?'] %}
+    {% endif %}
+
+{{ macros.install_packages(neutron_agentovs_agent_packages | customizable("packages")) }}
+
+{% endif %}
+
+
+{% block neutron_agentovs_agent_footer %}{% endblock %}
+{% block footer %}{% endblock %}
+{{ include_footer }}
+
+USER neutron
+

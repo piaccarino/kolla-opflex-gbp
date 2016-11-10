@@ -1,0 +1,126 @@
+[DEFAULT]
+verbose = False
+router_distributed = False
+debug = False
+use_syslog = True
+syslog_log_facility = LOG_LOCAL0
+bind_host = {{hostvars[ansible_host]['ansible_eth0']['ipv4']['address']}}
+bind_port = 9696
+core_plugin =neutron.plugins.ml2.plugin.Ml2Plugin
+service_plugins =group_policy,neutron.services.loadbalancer.plugin.LoadBalancerPlugin,neutron.services.firewall.fwaas_plugin.FirewallPlugin,neutron.services.vpn.oc_vpn_plugin.OCVPNDriverPlugin,ncp,neutron.services.metering.metering_plugin.MeteringPlugin,apic_gbp_l3
+auth_strategy = keystone
+base_mac = fa:16:3e:00:00:00
+mac_generation_retries = 16
+dhcp_lease_duration = 120
+dhcp_agent_notification = True
+allow_bulk = True
+allow_pagination = False
+allow_sorting = False
+allow_overlapping_ips = True
+agent_down_time = 60
+router_scheduler_driver = neutron.scheduler.l3_agent_scheduler.ChanceScheduler
+dhcp_agents_per_network = 2
+l3_ha = True
+max_l3_agents_per_router = 3
+min_l3_agents_per_router = 2
+l3_ha_net_cidr = 169.254.192.0/18
+api_workers = 4
+rpc_workers = 4
+use_ssl = False
+notify_nova_on_port_status_changes = True
+notify_nova_on_port_data_changes = True
+nova_url = https://{{vip.privateuiapi.name}}:8774/v2
+nova_region_name ={{os_region_name}}
+nova_admin_username =cloud_admin
+nova_admin_tenant_id = {{vault_nova_admin_tenant_id}}
+nova_admin_password ={{vault_admin_password_nova}}
+nova_admin_auth_url =https://{{vip.privateuiapi.name}}:35357/v2.0
+send_events_interval = 2
+rpc_conn_pool_size=180
+kombu_reconnect_delay=1.0
+rabbit_hosts={{rabbit_ips.1}}:5672,{{rabbit_ips.2}}:5672,{{rabbit_ips.3}}:5672
+rabbit_use_ssl=False
+rabbit_userid=neutron
+rabbit_password={{vault_rabbit_password}}
+rabbit_virtual_host=/
+rabbit_ha_queues=True
+rpc_thread_pool_size=180
+rpc_response_timeout=900
+rpc_backend=neutron.openstack.common.rpc.impl_kombu
+control_exchange=neutron
+logging_debug_format_suffix=%(funcName)s %(pathname)s:%(lineno)d
+logging_context_format_string=%(process)d: %(levelname)s %(name)s [%(request_id)s %(user_identity)s] %(instance)s%(message)s
+logging_default_format_string=%(process)d: %(levelname)s %(name)s [-] %(instance)s%(message)s
+logging_exception_prefix=%(process)d: TRACE %(name)s %(instance)s
+notification_driver = messaging
+notification_topics = notifications,monitor
+
+[matchmaker_redis]
+
+[matchmaker_ring]
+
+[quotas]
+
+[agent]
+root_helper = sudo neutron-rootwrap /etc/neutron/rootwrap.conf
+report_interval = 30
+
+[keystone_authtoken]
+remote_vpn_role_name= vpn
+auth_host = {{vip.privateuiapi.name}}
+auth_port = 35357
+auth_protocol = https
+admin_tenant_name = admin
+admin_user = cloud_admin
+admin_password = {{vault_admin_password_nova}}
+auth_uri=https://{{vip.privateuiapi.name}}:5000/
+
+[database]
+connection = mysql://neutron:{{vault_neutron_connection}}@{{vip.privateuiapi.ip}}/neutron?charset=utf8
+max_retries = 10
+retry_interval = 10
+min_pool_size = 1
+max_pool_size = 40
+idle_timeout = 5000
+max_overflow = 80
+
+[service_providers]
+service_provider=VPN:ocipsec:neutron.services.vpn.service_drivers.oc_ipsec.OCIPsecVPNDriver:default
+service_provider=LOADBALANCER:haproxy_on_vm:neutron.services.loadbalancer.drivers.oc_haproxy_on_vm.plugin_driver.HaproxyOnVMPluginDriver:default
+
+[group_policy]
+policy_drivers = implicit_policy,apic,chain_mapping
+extension_drivers = proxy_group
+
+[resource_mapping]
+dns_nameservers ={{external_services.dnsserver1.ip}}, {{external_services.dnsserver2.ip}}
+
+[opflex]
+networks=*
+
+[group_policy_proxy_group]
+default_proxy_ip_pool =192.168.0.0/16
+default_proxy_subnet_prefix_length=24
+
+[oneconvergence_node_driver]
+internet_out_network = {{internet_out_network}}
+heat_uri = https://{{vip.privateuiapi.name}}:8004/v1
+remote_vpn_client_pool_cidr = 192.168.254.0/24
+is_service_admin_owned = True
+svc_management_ptg_name = service-management
+managed_services = FIREWALL: asav;vyos, VPN: asav;vyos, LOADBALANCER: haproxy, FIREWALL_HA: asav;vyos, VPN_HA: asav;vyos, LOADBALANCER_HA: haproxy
+unmanaged_services = FIREWALL: vyos, VPN: vyos, LOADBALANCER: haproxy, FIREWALL_HA: vyos, VPN_HA: vyos, LOADBALANCER_HA: haproxy
+
+[admin_owned_resources_apic_tscp]
+plumbing_resource_owner_user =  cloud_admin
+plumbing_resource_owner_password =  {{vault_admin_password_nova}}
+plumbing_resource_owner_tenant_name =  admin
+
+[group_policy_implicit_policy]
+default_ip_pool = 10.0.0.0/16
+default_external_segment_name = internet-l3out
+default_subnet_prefix_length=26
+
+[node_composition_plugin]
+node_plumber = admin_owned_resources_apic_plumber 
+node_drivers = oneconvergence_node_driver

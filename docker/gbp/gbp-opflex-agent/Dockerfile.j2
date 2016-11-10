@@ -1,0 +1,35 @@
+FROM {{ namespace }}/{{ image_prefix }}gbp-base:{{ tag }}
+MAINTAINER {{ maintainer }}
+
+{% block neutron_opflex_agent_header %}{% endblock %}
+
+{% import "macros.j2" as macros with context %}
+
+{% if install_type == 'binary' %}
+
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+        {% set neutron_opflex_agent_packages = [
+            'libopflex',
+            'apicapi',
+            'libuv',
+            'neutron-ml2-driver-apic',
+            'python-openvswitch-gbp',
+            'neutron-opflex-agent'
+        ] %}
+    {% elif base_distro in ['ubuntu', 'debian'] %}
+        {% set neutron_opflex_agent_packages = ['neutron-opflex-agent?'] %}
+    {% endif %}
+
+{{ macros.install_packages(neutron_opflex_agent_packages | customizable("packages")) }}
+
+{% endif %}
+
+RUN mkdir /var/lib/opflex-agent-ovs \
+    && chown -R neutron: /etc/neutron /usr/share/neutron /var/lib/neutron /var/lib/opflex-agent-ovs \
+    && sed -i 's|^exec_dirs.*|exec_dirs=/var/lib/kolla/venv/bin,/sbin,/usr/sbin,/bin,/usr/bin,/usr/local/bin,/usr/local/sbin|g' /etc/neutron/rootwrap.conf
+
+{% block neutron_opflex_agent_footer %}{% endblock %}
+{% block footer %}{% endblock %}
+{{ include_footer }}
+
+USER neutron

@@ -1,0 +1,10 @@
+---
+- name: Removing existing neutron components 
+  docker_container:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - neutron_server
+    - neutron_l3_agent
+    - neutron_openvswitch_agent
+    - neutron_metadata_agent
